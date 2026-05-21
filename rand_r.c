@@ -41,7 +41,7 @@ int main (int argc, char ** argv)
     for (int j = min; j <= max; j = j * 2)
     {
 	fprintf (stderr, "testing %d\n", j);
-        srand (seed);
+        srand64 (seed);
 	char * nums = (char *) calloc (j, sizeof (char));
         for (int i = 0; i <= j; i++)
         {
