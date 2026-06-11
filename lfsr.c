@@ -103,6 +103,9 @@ int main() {
 // starts at 2 (2 bits numbered 1-2)
 // dummies added to make offsetting into the array easier
 // the first digit is how many taps. The rest are the taps or 0 for not a tap
+//
+// An alternative list is here:
+// https://ww2.ams.org/journals/mcom/1973-27-124/S0025-5718-1973-0327722-7/S0025-5718-1973-0327722-7.pdf?t=1779476860989
 static int BITS [33][5] =
 {
     {0,0,0,0,0},        // 0
