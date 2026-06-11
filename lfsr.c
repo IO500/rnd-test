@@ -101,9 +101,12 @@ int main() {
 // the table of which bit taps for various lengths give maximum length period
 // https://datacipy.elektroniche.cz/lfsr_table.pdf
 // starts at 2 (2 bits numbered 1-2)
+// dummies added to make offsetting into the array easier
 // the first digit is how many taps. The rest are the taps or 0 for not a tap
-static int BITS [31][5] =
+static int BITS [33][5] =
 {
+    {0,0,0,0,0},        // 0
+    {0,0,0,0,0},        // 1
     {2,2,1,0,0},        // 2
     {2,3,2,0,0},        // 3
     {2,4,3,0,0},        // 4
