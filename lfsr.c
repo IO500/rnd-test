@@ -57,30 +57,12 @@ LFSRConfig lfsr_configs[] =
 
 #define NUM_LFSR_CONFIGS (sizeof(lfsr_configs)/sizeof(lfsr_configs[0]))
 
-#define LFSR_BITS 6
-#define LFSR_MASK ((1u << LFSR_BITS) - 1u)  // 0x3F = 63
-
-typedef struct {
-    uint8_t state;  // lower 6 bits used, range 0..63
-} LFSR6;
-
 typedef struct
 {
     uint8_t bits;
     uint64_t state;
     uint64_t mask;
 } LFSR;
-
-// Initialize with nonzero 6-bit seed
-void lfsr6_init(LFSR6 *lfsr, uint8_t seed) {
-    seed &= LFSR_MASK;
-
-    if (seed == 0) {
-        seed = 1;  // all-zero state is invalid for maximal LFSR
-    }
-
-    lfsr->state = seed;
-}
 
 void lfsr_init (LFSR * lfsr, uint8_t bits, uint64_t seed)
 {
@@ -95,24 +77,6 @@ void lfsr_init (LFSR * lfsr, uint8_t bits, uint64_t seed)
     printf (" taps [2]: %d taps [3]: %d\n", lfsr_configs [lfsr->bits].taps [2], lfsr_configs [lfsr->bits].taps [3]);
     else
     printf ("\n");
-}
-
-// 6-bit, 4-tap, left-shifting maximal LFSR
-// Polynomial: x^6 + x^5 + x^3 + x^2 + 1
-// Feedback taps: bits 5, 3, 2, 0
-uint8_t lfsr6_step(LFSR6 *lfsr) {
-    uint8_t s = lfsr->state;
-
-    uint8_t feedback =
-        ((s >> 5) ^   // x^5 tap
-         (s >> 3) ^   // x^3 tap
-         (s >> 2) ^   // x^2 tap
-         (s >> 0))    // x^0 tap
-        & 1u;
-
-    lfsr->state = ((s << 1) & LFSR_MASK) | feedback;
-
-    return lfsr->state;
 }
 
 uint64_t lfsr_step (LFSR * lfsr)
@@ -147,56 +111,6 @@ uint64_t lfsr_step (LFSR * lfsr)
     return lfsr->state;
 }
 
-int old_main(void) {
-    LFSR6 lfsr;
-    uint8_t initial = 1;
-    lfsr6_init(&lfsr, initial);
-
-    do
-    {
-        printf("%2u\n", lfsr.state);
-
-        lfsr6_step(&lfsr);
-
-    } while (lfsr.state != initial);
-
-    return 0;
-}
-
-// Generate full period output for LFSR of given config
-void generate_lfsr_sequence(const LFSRConfig *config)
-{
-    uint64_t state = 0xdeadc0dedeadc0de; // non-zero seed
-    uint64_t mask = ((uint64_t)1 << config->bit_length) - 1;
-    uint64_t period = ((uint64_t)1 << config->bit_length) - 1;
-
-    printf("%d-bit LFSR sequence (period %llu):\n", config->bit_length, period);
-
-    size_t buf_len = 256;
-    char buf [buf_len];
-    snprintf (buf, buf_len, "%u.txt", config->bit_length);
-    FILE * f = fopen (buf, "w");
-    //FILE * f = stdout;
-    for (uint64_t i = 0; i < period; i++)
-    {
-        printf ("bit length: %d\n", config->bit_length);
-        //uint8_t tap0 = config->bit_length - config->taps [0];
-        //uint8_t tap1 = config->bit_length - config->taps [1];
-        //uint8_t tap2 = config->bit_length - config->taps [2];
-        //uint8_t tap3 = config->bit_length - config->taps [3];
-        uint8_t tap0 = config->taps [0];
-        uint8_t tap1 = config->taps [1];
-        uint8_t tap2 = config->taps [2];
-        uint8_t tap3 = config->taps [3];
-        printf ("taps: %hhu, %hhu, %hhu, %hhu\n", tap0, tap1, tap2, tap3);
-        uint64_t out_bit = ((state >> tap0) ^ (state >> tap1) ^ (state >> tap2) ^ (state >> tap3)) & 1u;
-        state = (state >> 1) | (out_bit << config->bit_length);
-        state &= mask;
-        fprintf (f, "%llu\n", state);
-    }
-    fclose (f);
-}
-
 int main (void)
 {
     // The min and max 4KB blocks based on file sizes driven by a network rate and 300 seconds
@@ -204,7 +118,7 @@ int main (void)
     uint64_t max = 1024l * 1024 * 1024 * 200 * 300 / 4096; // 200 GB/sec for 300 seconds
     uint8_t min_bits = 0;
     uint8_t max_bits = 0;
-    uint64_t seed = 1;//0xffff; // start with lots of 1 bits
+    uint64_t seed = 1;
 
     uint64_t t = min;
     while (t >>= 1) min_bits++;
@@ -217,15 +131,12 @@ int main (void)
     size_t buf_len = 256;
     char buf [buf_len];
     for (uint8_t i = 3; i < NUM_LFSR_CONFIGS; i++)
-    //for (int i = 3; i < 10; i++)
-    //uint8_t i = 12;
     {
         lfsr_init (&lfsr, i, seed);
         snprintf (buf, buf_len, "%u.txt", lfsr.bits);
         FILE * f = fopen (buf, "w");
         do
         {
-            //printf("%llu\n", lfsr.state);
             fprintf(f, "%llu\n", lfsr.state);
     
             lfsr_step(&lfsr);
