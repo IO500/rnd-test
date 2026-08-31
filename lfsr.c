@@ -198,7 +198,7 @@ int test_ranges_list_main (void)
 int main (void)
 {
     // for 344 blocks, we'll have these 4 bits set
-    uint64_t blocks = 16;//256 + 64 + 16  + 8; // 4 bits out of 9 set
+    uint64_t blocks = 12;//256 + 64 + 16  + 8; // 4 bits out of 9 set
 
     // That means we'll have the following ranges for each of the bits:
     // bit range file_offset
@@ -224,6 +224,7 @@ int main (void)
     uint8_t bit_offset = 1;
     uint64_t lfsr_seed = 1;
 
+    // build the list of LFSR generators based on set bits
     while (b != 0)
     {
         if (b & 1)
@@ -240,15 +241,17 @@ int main (void)
         bit_offset++;
     }
 
+    // randomize across all of them to generate the right offsets list to cover everything
     int seed = time (NULL);
     uint64_t i = 0;
     for (i = 0; rnds_count > 0; i++)
     {
         int x = rand_r (&seed) % rnds_count;
-        uint64_t val = rnds [x].lfsr.state;
-        lfsr_step (&rnds [x].lfsr);
-        uint64_t block_to_read = 0;
+        uint64_t block_to_read = rnds [x].lfsr.state;
         uint64_t base_offset = rnds [x].file_base_offset;
+        lfsr_step (&rnds [x].lfsr);
+        //printf ("%d: block_to_read: %llu\n", i, block_to_read);
+        printf ("%llu block for lfsr (rnds_count: %d) %d\n", block_to_read, rnds_count, x);
         if (rnds [x].lfsr.state == lfsr_seed)
         {
             block_to_read = 0;
@@ -258,15 +261,11 @@ int main (void)
                 rnds [j] = rnds [j + 1];
             }
             rnds_count--;
-            printf ("nnds_count: %hhu\n", rnds_count);
+            printf ("%llu block for lfsr (rnds_count: %d) %d\n", block_to_read, rnds_count, x);
+            //printf ("rnds_count: %hhu\n", rnds_count);
         }
-        else
-        {
-            block_to_read = rnds [x].lfsr.state;
-        }
-        printf ("%llu block for lfsr (rnds_count: %d) %d\n", block_to_read, rnds_count, x);
     }
-    printf ("i: %llu blocks: %llu\n", i, blocks);
+    //printf ("i: %llu blocks: %llu\n", i, blocks);
 
     return 0;
 }
