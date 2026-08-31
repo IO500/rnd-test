@@ -60,6 +60,10 @@ LFSRConfig lfsr_configs[] =
 
 #define NUM_LFSR_CONFIGS (sizeof(lfsr_configs)/sizeof(lfsr_configs[0]))
 
+// number of bits to shift (multiply by for random size)
+// curent assumption is a bit shift rather than a multiply and add
+#define RND_SIZE 12
+
 typedef struct
 {
     uint8_t bits;
@@ -115,6 +119,22 @@ uint64_t lfsr_step (LFSR * lfsr)
     lfsr->state = ((s << 1) & lfsr->mask) | feedback;
 
     return lfsr->state;
+}
+
+void print_lfsr (LFSRConfig * lfsr, uint64_t file_base_offset)
+{
+    printf ("bit_length: %d num_taps: %d ", lfsr->bit_length, lfsr->num_taps);
+    switch (lfsr->num_taps)
+    {
+        case 2:
+            printf (" [0, 1]: %d, %d", lfsr->taps [0], lfsr->taps [1]);
+            break;
+
+        case 4:
+            printf (" [0, 1, 2, 3]: %d, %d", lfsr->taps [0], lfsr->taps [1], lfsr->taps [2], lfsr->taps [3]);
+            break;
+    }
+    printf (" file_base_offset: %llu\n", file_base_offset);
 }
 
 int test_period_main (void)
@@ -233,8 +253,12 @@ int main (void)
             lfsr_init (&rnds [rnds_count].lfsr, bit_offset-1, lfsr_seed);
             if (rnds_count != 0)
             {
-                rnds [rnds_count].file_base_offset = rnds [rnds_count - 1].file_base_offset + (1 << rnds [rnds_count - 1].lfsr_index);
+                rnds [rnds_count].file_base_offset =
+                    (  rnds [rnds_count - 1].file_base_offset
+                    + (1 << rnds [rnds_count - 1].lfsr_index)
+                    ) << RND_SIZE;
             }
+            //print_lfsr (&lfsr_configs [rnds [rnds_count].lfsr_index], rnds [rnds_count].file_base_offset);
             rnds_count++;
         }
         b >>= 1;
@@ -249,19 +273,24 @@ int main (void)
         int x = rand_r (&seed) % rnds_count;
         uint64_t block_to_read = rnds [x].lfsr.state;
         uint64_t base_offset = rnds [x].file_base_offset;
+        uint64_t offset = base_offset + (block_to_read << RND_SIZE);
         lfsr_step (&rnds [x].lfsr);
         //printf ("%d: block_to_read: %llu\n", i, block_to_read);
-        printf ("%llu block for lfsr (rnds_count: %d) %d\n", block_to_read, rnds_count, x);
+        //printf ("%llu block for lfsr (rnds_count: %d) %d\n", block_to_read, rnds_count, x);
+        printf ("%llu offset is %llu block for lfsr (rnds_count: %d) %d\n", offset, block_to_read, rnds_count, x);
         if (rnds [x].lfsr.state == lfsr_seed)
         {
             block_to_read = 0;
+            base_offset = rnds [x].file_base_offset;
+            offset = base_offset + (block_to_read << RND_SIZE);
             //printf ("remove this one\n");
             for (int j = x; j < rnds_count; j++)
             {
                 rnds [j] = rnds [j + 1];
             }
             rnds_count--;
-            printf ("%llu block for lfsr (rnds_count: %d) %d\n", block_to_read, rnds_count, x);
+            //printf ("%llu block for lfsr (rnds_count: %d) %d\n", block_to_read, rnds_count, x);
+            printf ("%llu offset is %llu block for lfsr (rnds_count: %d) %d\n", offset, block_to_read, rnds_count, x);
             //printf ("rnds_count: %hhu\n", rnds_count);
         }
     }
