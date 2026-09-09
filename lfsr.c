@@ -62,7 +62,7 @@ LFSRConfig lfsr_configs[] =
 
 // number of bits to shift (multiply by for random size)
 // curent assumption is a bit shift rather than a multiply and add
-#define RND_SIZE 12
+#define RND_SIZE 1
 
 typedef struct
 {
@@ -218,7 +218,7 @@ int test_ranges_list_main (void)
 int main (void)
 {
     // for 344 blocks, we'll have these 4 bits set
-    uint64_t blocks = 12;//256 + 64 + 16  + 8; // 4 bits out of 9 set
+    uint64_t blocks = 16+8;//256 + 64 + 16  + 8; // 4 bits out of 9 set
 
     // That means we'll have the following ranges for each of the bits:
     // bit range file_offset
@@ -294,7 +294,7 @@ int main (void)
             //printf ("rnds_count: %hhu\n", rnds_count);
         }
     }
-    //printf ("i: %llu blocks: %llu\n", i, blocks);
+    printf ("i: %llu blocks: %llu\n", i, blocks);
 
     return 0;
 }
