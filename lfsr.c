@@ -218,7 +218,7 @@ int test_ranges_list_main (void)
 int main (void)
 {
     // for 344 blocks, we'll have these 4 bits set
-    uint64_t blocks = 16+8;//256 + 64 + 16  + 8; // 4 bits out of 9 set
+    uint64_t blocks = 8+16+32;//256 + 64 + 16  + 8; // 4 bits out of 9 set
 
     // That means we'll have the following ranges for each of the bits:
     // bit range file_offset
@@ -273,13 +273,10 @@ int main (void)
         int x = rand_r (&seed) % rnds_count;
         uint64_t block_to_read = rnds [x].lfsr.state;
         uint64_t base_offset = rnds [x].file_base_offset;
-        uint64_t offset = base_offset + (block_to_read << RND_SIZE);
-        lfsr_step (&rnds [x].lfsr);
-        //printf ("%d: block_to_read: %llu\n", i, block_to_read);
-        //printf ("%llu block for lfsr (rnds_count: %d) %d\n", block_to_read, rnds_count, x);
+        uint64_t offset = base_offset + (block_to_read << RND_SIZE);        
         printf ("%llu offset is %llu block for lfsr (rnds_count: %d) %d\n", offset, block_to_read, rnds_count, x);
-        if (rnds [x].lfsr.state == lfsr_seed)
-        {
+
+        if (rnds [x].lfsr.state == 0){
             block_to_read = 0;
             base_offset = rnds [x].file_base_offset;
             offset = base_offset + (block_to_read << RND_SIZE);
@@ -292,6 +289,13 @@ int main (void)
             //printf ("%llu block for lfsr (rnds_count: %d) %d\n", block_to_read, rnds_count, x);
             printf ("%llu offset is %llu block for lfsr (rnds_count: %d) %d\n", offset, block_to_read, rnds_count, x);
             //printf ("rnds_count: %hhu\n", rnds_count);
+            continue;
+        }
+
+        lfsr_step (&rnds [x].lfsr);
+        if (rnds [x].lfsr.state == lfsr_seed)
+        {
+          rnds [x].lfsr.state = 0;
         }
     }
     printf ("i: %llu blocks: %llu\n", i, blocks);
